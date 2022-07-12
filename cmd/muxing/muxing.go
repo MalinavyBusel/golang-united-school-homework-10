@@ -49,7 +49,7 @@ func main() {
 
 func handleNameGet(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	name, ok := vars["name"]
+	name, ok := vars["PARAM"]
 	if !ok {
 		w.WriteHeader(http.StatusBadRequest) // 400
 		return
