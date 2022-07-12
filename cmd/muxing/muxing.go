@@ -51,7 +51,8 @@ func handleNameGet(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	name, ok := vars["name"]
 	if !ok {
-		fmt.Println("id is missing in parameters")
+		w.WriteHeader(http.StatusBadRequest) // 400
+		return
 	}
 
 	w.WriteHeader(http.StatusOK) // 200
