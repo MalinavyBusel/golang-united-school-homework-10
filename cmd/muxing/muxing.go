@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -19,10 +20,19 @@ main function reads host/port from env just for an example, flavor it following 
 
 // Start /** Starts the web server listener on given host and port.
 func Start(host string, port int) {
-	router := mux.NewRouter()
+	Router := mux.NewRouter()
+
+	Router.HandleFunc("/name/{PARAM}",
+		handleNameGet).Methods(http.MethodGet)
+	Router.HandleFunc("/bad",
+		handleBadConn).Methods(http.MethodGet)
+	Router.HandleFunc("/data",
+		handleDataPost).Methods(http.MethodPost)
+	Router.HandleFunc("/headers",
+		handleHeadersPost).Methods(http.MethodPost)
 
 	log.Println(fmt.Printf("Starting API server on %s:%d\n", host, port))
-	if err := http.ListenAndServe(fmt.Sprintf("%s:%d", host, port), router); err != nil {
+	if err := http.ListenAndServe(fmt.Sprintf("%s:%d", host, port), Router); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -35,4 +45,46 @@ func main() {
 		port = 8081
 	}
 	Start(host, port)
+}
+
+func handleNameGet(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	name, ok := vars["name"]
+	if !ok {
+		fmt.Println("id is missing in parameters")
+	}
+
+	w.WriteHeader(http.StatusOK) // 200
+	w.Write([]byte(fmt.Sprintf("Hello, %s!", name)))
+}
+
+func handleBadConn(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusInternalServerError) // 500
+}
+
+func handleDataPost(w http.ResponseWriter, r *http.Request) {
+	data, err := io.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest) // 400
+		return
+	}
+	w.Write([]byte(fmt.Sprintf("I got message:\n%s", data)))
+	w.WriteHeader(http.StatusOK) // 200
+}
+
+func handleHeadersPost(w http.ResponseWriter, r *http.Request) {
+	a, err := strconv.Atoi(r.Header.Get("a"))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest) // 400
+		return
+	}
+
+	b, err := strconv.Atoi(r.Header.Get("b"))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest) // 400
+		return
+	}
+
+	w.Header().Set("a+b", strconv.Itoa(a+b))
+	w.WriteHeader(http.StatusOK) // 200
 }
